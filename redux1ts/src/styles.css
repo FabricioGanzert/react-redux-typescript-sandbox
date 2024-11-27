@@ -1,0 +1,66 @@
+/* Global styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  html, body {
+    height: 100%;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Align items at the top */
+    align-items: flex-start; /* Align items to the left */
+    height: 100%;
+    padding: 20px;
+  }
+  
+  nav {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  
+  h1, h2 {
+    margin-bottom: 20px;
+  }
+  
+  a {
+    text-decoration: none;
+    color: blue;
+  }
+  
+  a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Add additional styling for responsiveness */
+  @media (max-width: 768px) {
+    .app-container {
+      padding: 10px;
+    }
+  
+    nav {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+  
+  /* Style for the unordered list (ul) */
+ul {
+  list-style-type: none;  /* Remove default bullet points */
+  padding: 0;             /* Remove padding */
+  margin: 0;              /* Remove margin */
+  text-align: left;       /* Align the content of the ul to the left */
+}
+
+/* Style for the list items (li) */
+ul li {
+  margin: 5px 0;          /* Add vertical space between items */
+  padding-left: 10px;     /* Optional: Add some space to the left of each list item */
+}
