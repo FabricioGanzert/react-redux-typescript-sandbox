@@ -4,8 +4,16 @@ import cors from "cors";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import cookieParser from "cookie-parser"; // Import cookie-parser
+import fs from 'fs';
+import https from "https";
 
 const app = express();
+
+// Load SSL certificate and private key
+const privateKey = fs.readFileSync('/home/Neo/Desktop/AWS-Ganzert/my-ssl-certs/localhost.key', 'utf8');
+const certificate = fs.readFileSync('/home/Neo/Desktop/AWS-Ganzert/my-ssl-certs/localhost.crt', 'utf8');
+const credentials = { key: privateKey, cert: certificate };
+
 const port = 5000;
 app.use(cookieParser()); // Add cookie-parser middleware
 app.use(express.json());
@@ -32,10 +40,23 @@ db.connect((err) => {
   console.log("Connected to MySQL database");
 });
 
+// Define the allowed origins (you can also use "*" to allow all origins)
+const allowedOrigins = ['https://192.168.0.18:3000', 'http://192.168.0.18:3000']; // Add your frontend URLs here
+
+// CORS configuration
 const corsOptions = {
-  origin: process.env.SERVER_ORIGIN_APP,  // Adjust if needed
-  methods: "GET,POST,PUT,DELETE",
-  credentials: true,  // Allow cookies or authorization headers
+  origin: function (origin, callback) {
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      // Allow the request if the origin is in the allowedOrigins list or if the origin is not specified (e.g., for postman)
+      callback(null, true);
+    } else {
+      // Reject the request if the origin is not allowed
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Add methods you want to allow
+  allowedHeaders: ['Content-Type', 'Authorization'], // Specify allowed headers
+  credentials: true, // Allow cookies to be sent with requests
 };
 
 app.use(cors(corsOptions));
@@ -65,18 +86,32 @@ const authenticateJWT = (req, res, next) => {
   }
 };
 
-
 // Endpoint to verify the token
-app.get("/api/verify-token", authenticateJWT, (req, res) => {
-  //console.log("Received token:", req.cookies.token); // Log the token
-  try {
-    const decoded = jwt.verify(req.cookies.token, secretKey);
-    //console.log("Decoded token:", decoded);
-    res.json({ message: "Token is valid", user: decoded });
-  } catch (err) {
-    //console.error("Token verification failed:", err.message);
-    res.status(403).json({ error: "Invalid or expired token" });
+app.get('/api/verify-token', (req, res) => {
+  const token = req.cookies.token;
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
+
+  jwt.verify(token, secretKey, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ error: 'Token is invalid or expired' });
+    }
+    
+    res.status(200).json({ user: decoded.user });
+  });
+});
+
+// Server-side logout handler
+app.post('/api/logout', (req, res) => {
+  // Clear the cookie by setting it to expire in the past
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "None",
+  });
+  res.status(200).send({ message: 'Logged out successfully' });
 });
 
 // Login endpoint
@@ -118,12 +153,12 @@ app.post("/api/login", (req, res) => {
 
       // Set the token as an HTTP-only cookie
       res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
-        maxAge: 3600000, // Token expiration in milliseconds (1 hour)
+        httpOnly: true,  // Prevent access to the cookie from JavaScript (for security)
+        secure: true,
+        sameSite: "None",  // Allow cross-origin requests
+        maxAge: 3600000,  // Token expiration in milliseconds (1 hour)
       });
-
+      
       // Respond with a success message
       res.json({ message: "Logged in successfully" });
     });
@@ -149,7 +184,7 @@ app.post("/api/users", authenticateJWT, (req, res) => {
     const query = "INSERT INTO users (name, lastName, email, password) VALUES (?, ?, ?, ?)";
     db.query(query, [name, lastname, email, hashedPassword], (err, result) => {
       if (err) {
-        return res.status(500).json({ error: "Failed to insert user" });
+        return res.status(500).json({ error: "err" });
       }
       res.status(201).json({ message: "User added successfully", userId: result.insertId, email: email, name: name, lastname: lastname });
     });
@@ -215,7 +250,10 @@ app.get("/api/users", authenticateJWT, (req, res) => {
   });
 });
 
+// Create the HTTPS server
+const httpsServer = https.createServer(credentials, app);
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+// Set the server to listen on a port (e.g., 3000)
+httpsServer.listen(port, () => {
+  console.log(`Server is running on https://localhost:${port}`);
 });

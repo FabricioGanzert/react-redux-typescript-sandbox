@@ -4,13 +4,20 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { AppDispatch, RootState } from "./store/store";
 import axios from "axios";
 import { fetchUsers } from "./store/slices/addUserSlice";
-import { setLoginStatus, setUserData, logout } from "./store/slices/authSlice";
+import { setLoginStatus, setUserData } from "./store/slices/authSlice";
 import AddUserPage from "./pages/AddUserPage";
+import ListUserPage from "./pages/ListUserPage";
 import Login from "./pages/LoginPage";
 import "./styles.css"; // Import the global CSS file
+import Logout from "./components/Logout";
 
 const App: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>(); // Use the correct dispatch type
+
+  const currentPage = useSelector(
+    (state: RootState) => state.addUser.currentPage
+  );
+
   const { isLoggedIn, userData } = useSelector(
     (state: RootState) => state.auth
   );
@@ -30,7 +37,7 @@ const App: React.FC = () => {
         dispatch(setUserData(response.data.user));
 
         // Fetch users only if the token is valid
-        dispatch(fetchUsers());
+        dispatch(fetchUsers(currentPage));
       } catch (error) {
         console.error("Token verification failed:", error);
         dispatch(setLoginStatus(false));
@@ -39,7 +46,7 @@ const App: React.FC = () => {
     };
 
     checkLoginStatus();
-  }, [dispatch]);
+  }, [currentPage, dispatch]);
 
   return (
     <Router>
@@ -56,19 +63,8 @@ const App: React.FC = () => {
             </span>
           ) : (
             <span>
-              | <Link to="/addnewuser">Add New User</Link> |{" "}
-              <span
-                onClick={() => {
-                  dispatch(logout()); // Dispatch logout action to clear Redux state
-                }}
-                style={{
-                  cursor: "pointer",
-                  color: "blue",
-                  textDecoration: "underline",
-                }}
-              >
-                Logout
-              </span>
+              | <Link to="/listusers">List Users</Link> |{" "}
+              <Link to="/addnewuser">Add New User</Link> | <Logout />
             </span>
           )}
         </nav>
@@ -90,6 +86,7 @@ const App: React.FC = () => {
           />
 
           <Route path="/addnewuser" element={<AddUserPage />} />
+          <Route path="/listusers" element={<ListUserPage />} />
           <Route path="/login" element={<Login />} />
         </Routes>
       </div>

@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createAsyncThunk  } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { User } from '../../models/User';  // Import the User model
 
@@ -6,18 +6,54 @@ interface AddUserState {
   users: User[];  // Use User type here
   loading: boolean;
   error: string | null;
+  currentPage: number;
+  totalPages: number;
 }
+
+const initialState: AddUserState = {
+  users: [],
+  loading: false,
+  error: null,
+  currentPage: 1,  // Set initial page to 1
+  totalPages: 1,   // Set initial total pages to 1
+};
+
 
 const url_listusers_api = import.meta.env.VITE_APP_USERS_LIST as string;
 
 // Fetch users asynchronously with JWT protection via HTTP-only cookies
-export const fetchUsers = createAsyncThunk('users/fetchUsers', async () => {
-  const response = await axios.get<User[]>(url_listusers_api, {
-    withCredentials: true,  // Ensure the cookie is sent with the request
-  });
-  return response.data;
-});
+const activeFetches: { [key: number]: boolean } = {}; // Tracks active fetches by page
 
+export const fetchUsers = createAsyncThunk(
+  'users/fetchUsers',
+  async (currentPg: number, { rejectWithValue }) => {
+    if (activeFetches[currentPg]) {
+      return null;
+    }
+
+    activeFetches[currentPg] = true;
+    try {
+      const response = await axios.get<{
+        users: User[];
+        totalPages: number;
+        currentPage: number;
+      }>(`${url_listusers_api}?page=${currentPg}&limit=5`, {
+        withCredentials: true,
+      });
+
+      activeFetches[currentPg] = false;
+      return {
+        users: response.data.users,
+        totalPages: response.data.totalPages,
+        currentPage: response.data.currentPage,
+      };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      activeFetches[currentPg] = false;
+      return rejectWithValue('Failed to fetch users');
+    }
+  }
+);
 // Remove user asynchronously with JWT protection via HTTP-only cookies
 export const removeUser = createAsyncThunk(
   'users/removeUser',
@@ -54,18 +90,15 @@ export const addUser = createAsyncThunk(
   }
 );
 
-const initialState: AddUserState = {
-  users: [],
-  loading: false,
-  error: null,
-};
-
 const addUserSlice = createSlice({
   name: 'addUser',
   initialState,
   reducers: {
     removeUser: (state, action: PayloadAction<number>) => {
       state.users.splice(action.payload, 1);
+    },
+    updateCurrentPage: (state, action: PayloadAction<number>) => {
+      state.currentPage = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -77,11 +110,15 @@ const addUserSlice = createSlice({
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.loading = false;
-        state.users = action.payload;
+        if (action.payload) {
+          state.users = action.payload.users;
+          state.totalPages = action.payload.totalPages;
+          state.currentPage = action.payload.currentPage;
+        }
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to fetch users';
+        state.error = action.error.message || "Failed to fetch users";
       })
       // Add User
       .addCase(addUser.pending, (state) => {
@@ -112,4 +149,5 @@ const addUserSlice = createSlice({
   },
 });
 
+export const { updateCurrentPage } = addUserSlice.actions;
 export default addUserSlice.reducer;
