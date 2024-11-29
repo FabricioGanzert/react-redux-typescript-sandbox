@@ -7,9 +7,9 @@ const ListUserPage: React.FC = () => {
   useAuth(); // Call the hook to verify token
 
   return (
-    <div>
+    <>
       <UserList />
-    </div>
+    </>
   );
 };
 

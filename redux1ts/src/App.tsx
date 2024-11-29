@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AppDispatch, RootState } from "./store/store";
 import axios from "axios";
 import { fetchUsers } from "./store/slices/addUserSlice";
@@ -9,7 +9,7 @@ import AddUserPage from "./pages/AddUserPage";
 import ListUserPage from "./pages/ListUserPage";
 import Login from "./pages/LoginPage";
 import "./styles.css"; // Import the global CSS file
-import Logout from "./components/Logout";
+import NavBar from "./components/NavBar";
 
 const App: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>(); // Use the correct dispatch type
@@ -51,23 +51,7 @@ const App: React.FC = () => {
   return (
     <Router>
       <div className="app-container">
-        {" "}
-        {/* Container for layout */}
-        <nav style={{ marginBottom: "20px" }}>
-          <Link to="/" style={{ marginRight: "10px" }}>
-            Home
-          </Link>{" "}
-          {!isLoggedIn ? (
-            <span>
-              | <Link to="/login">Login</Link>
-            </span>
-          ) : (
-            <span>
-              | <Link to="/listusers">List Users</Link> |{" "}
-              <Link to="/addnewuser">Add New User</Link> | <Logout />
-            </span>
-          )}
-        </nav>
+        <NavBar isLoggedIn={isLoggedIn} />
         <Routes>
           <Route
             path="/"

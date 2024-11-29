@@ -50,7 +50,7 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div style={{ textAlign: "center", marginTop: "20px" }}>
+    <>
       <h1>Login</h1>
       <div style={{ marginBottom: "10px" }}>
         <input
@@ -84,7 +84,7 @@ const LoginPage: React.FC = () => {
         {isLoading ? "Logging in..." : "Login"}
       </button>
       {error && <p style={{ color: "red" }}>{error}</p>}
-    </div>
+    </>
   );
 };
 

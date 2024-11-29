@@ -18,11 +18,11 @@ const AddUserPage: React.FC = () => {
   }, [isLoggedIn]);
 
   return (
-    <div>
+    <>
       <h1>Add New User Page</h1>
       <AddUser />
       <UserList />
-    </div>
+    </>
   );
 };
 
